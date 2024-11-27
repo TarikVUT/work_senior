@@ -62,11 +62,11 @@ class MyBrowser(QMainWindow):
         self.my_custom_page.channel.registerObject("notification_fill_text",self.notification_fill_text)
         # Load URL blocker and logger
         #self.data_in_my_config_data = my_config_data
-        path_to_phishing_database =_dataProvider.phishingDatabase
-        path_to_allowed_website = _dataProvider.allowedURL
+        #path_to_phishing_database =_dataProvider.phishingDatabase
+        #path_to_allowed_website = _dataProvider.allowedURL
         #path_to_phishing_database = my_config_data["phishing_database"]["path"]
-        self.url_blocker = URLBlocker(path_to_phishing_database,path_to_allowed_website)
-        #self.url_logger = URLLogger()
+        self.url_blocker = URLBlocker(_dataProvider.phishingDatabase,_dataProvider.allowedURL)
+    
         
         # Check if phishing database is up to date
         phishing_database_check_update = PhishingDatabaseModificationChecker(_dataProvider)
@@ -390,12 +390,11 @@ class MyBrowser(QMainWindow):
         # Create Home QvBoxLayout
         menu2Address_layout = QVBoxLayout(self.menu2Address)
         self.menu2_addres_new_text_label = QLabel("Search", self.menu2_button)
-        ###self.menu2Address.setStyleSheet(f"color: {font_color};")
-        #self.menu2_addres_new_text_label.setWordWrap(True)
         self.menu2_addres_new_text_label.setAlignment(Qt.AlignCenter)
         menu2Address_layout.addWidget(self.menu2_addres_new_text_label)
         # Align text and icon in the center
         menu2Address_layout.setAlignment(self.menu2_addres_new_text_label,Qt.AlignCenter)
+        
         self.menu2Address.clicked.connect(self.toggle_url_toolbar)
         self.menu2Address.setCursor(Qt.PointingHandCursor)
         self.menu_2_toolbar.addWidget(self.menu2Address)
@@ -733,10 +732,10 @@ class MyBrowser(QMainWindow):
         """
         Toggles the visibility of the URL toolbar and the toolbar space in the main browser.
         """
-
-        self.main_browser.setUrl(QUrl("about:blank"))
-        self.url_toolbar.setVisible(not self.url_toolbar.isVisible())
-        self.toolbar_space.setVisible(not self.toolbar_space.isVisible())
+        if self.global_dataProvider.protectionLevel != 3:
+            self.main_browser.setUrl(QUrl("about:blank"))
+            self.url_toolbar.setVisible(not self.url_toolbar.isVisible())
+            self.toolbar_space.setVisible(not self.toolbar_space.isVisible())
 
     # This method is used for navigation URL bar
     def navigate_to_url(self):
@@ -747,24 +746,45 @@ class MyBrowser(QMainWindow):
 
         # Get url from URL toobal
         url_in_bar_value = self.url_bar.text().strip()
-        #If "." is not contained in URL
-        if "." not in url_in_bar_value:
-            url_in_bar_value = "https://www.google.com/search?q=" + url_in_bar_value
-        # If in URl not http or https, connect with HTTPS
-        if "://" not in url_in_bar_value:
-            url_in_bar_value = "https://" + url_in_bar_value
-        
-        # Set default style for toolbar
-        self.menu_1_toolbar.setStyleSheet(self.default_style_toolbar())
-        self.menu_2_toolbar.setStyleSheet(self.default_style_toolbar())
-          
-        # Set visible after navitigation
-        self.url_toolbar.setVisible(False)
-        self.toolbar_space.setVisible(False)
-        # Set url bar as clean
-        self.url_bar.clear()
-        # Connect to URL after entering
-        self.main_browser.setUrl(QUrl(url_in_bar_value))
+
+        if self.global_dataProvider.protectionLevel == 2:
+            web_url = self.url_blocker.find_url_with_value(url_in_bar_value)
+            
+            if web_url != "None":
+
+                # Set default style for toolbar
+                self.menu_1_toolbar.setStyleSheet(self.default_style_toolbar())
+                self.menu_2_toolbar.setStyleSheet(self.default_style_toolbar())
+                
+                # Set visible after navitigation
+                self.url_toolbar.setVisible(False)
+                self.toolbar_space.setVisible(False)
+                # Set url bar as clean
+                self.url_bar.clear()
+                # Connect to URL after entering
+                self.main_browser.setUrl(QUrl(web_url)) 
+            else:
+                print("URL is not permitted")
+                    
+        else:
+            #If "." is not contained in URL
+            if "." not in url_in_bar_value:
+                url_in_bar_value = "https://www.google.com/search?q=" + url_in_bar_value
+            # If in URl not http or https, connect with HTTPS
+            if "://" not in url_in_bar_value:
+                url_in_bar_value = "https://" + url_in_bar_value
+            
+            # Set default style for toolbar
+            self.menu_1_toolbar.setStyleSheet(self.default_style_toolbar())
+            self.menu_2_toolbar.setStyleSheet(self.default_style_toolbar())
+            
+            # Set visible after navitigation
+            self.url_toolbar.setVisible(False)
+            self.toolbar_space.setVisible(False)
+            # Set url bar as clean
+            self.url_bar.clear()
+            # Connect to URL after entering
+            self.main_browser.setUrl(QUrl(url_in_bar_value))
     
     # Method for security against phishing    
     def security_against_phishing(self,qurl):

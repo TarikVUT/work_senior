@@ -131,7 +131,7 @@ class MyWebEnginePage(QWebEnginePage):
 """  
         
     
-
+\
     
 # Define main function to call application
 if __name__ == "__main__":
@@ -152,6 +152,7 @@ if __name__ == "__main__":
         main_window.show() 
         main_window.show_app_full_screen() # Call main browser window, this set the full screen.
         sys.exit(qApplication.exec_())
+ 
     except Exception as excep:
         print(f"Error: {excep}")
         print("Detailed traceback:")

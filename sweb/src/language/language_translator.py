@@ -7,7 +7,6 @@ class Translator:
         self.language_keys = ["cz","en","de"]
         
         self.current_language_in_browser = global_dataProvider.language
-        print("current_language_in_browser",self.current_language_in_browser)
         self.text = _dataProvider.text
 
         # Set current language is CZ =0 , EN = 1, DE = 2

@@ -47,5 +47,5 @@ class NotificationFillTextToPhishing(QObject):
             print("Email sent successfully!!!")
         except Exception as excep:
             print(f"Error sending email: {excep}")
-            # Log with level 2 - CRITICAL
+        
   

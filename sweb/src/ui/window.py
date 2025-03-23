@@ -1,44 +1,50 @@
+
 # Frameworks from PyQt5 libraries
+from PyQt5.QtWebEngineWidgets import QWebEnginePage, QWebEngineView, QWebEngineProfile
 from PyQt5.QtWidgets import QMainWindow, QApplication, QStyle, QLabel, QVBoxLayout, QHBoxLayout
 from PyQt5.QtWidgets import QLineEdit, QPushButton, QToolBar, QWidget
-from PyQt5.QtWebEngineWidgets import QWebEnginePage, QWebEngineView, QWebEngineProfile
+
 from PyQt5.QtCore import QEvent, QUrl, Qt, QTimer, QSize, pyqtSignal, QObject, pyqtSlot
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QSizePolicy
 # Library for creating channel for monitoring input keyboard
 from PyQt5.QtWebChannel import QWebChannel
 
-from src.utils.url_blocker import URLBlocker
-from src.phish.update_phishing import PhishingDatabaseModificationChecker
-from src.language.language_translator import Translator
-from src.utils.monitor_provider import GetMonitorHeightAndWidth
-from src.phish.notification_email import NotificationFillTextToPhishing
-from src.browser.browser_core import MyWebEnginePage
+from sweb.utils.url_blocker import URLBlocker
+from sweb.phish.update_phishing import PhishingDatabaseModificationChecker
+from sweb.language.language_translator import Translator
+from sweb.utils.monitor_provider import GetMonitorHeightAndWidth
+from sweb.phish.notification_email import NotificationFillTextToPhishing
+from sweb.browser.browser_core import MyWebEnginePage
+import os
+# Set QT Environment Variables
+os.environ["QTWEBENGINE_DISABLE_SANDBOX"] = "1"
 # My main browser contains all GUI in this class (Toolbar, Buttons, URLbar)
-
+Debug = False
 ## static size of the button
-BUTTON_WIDTH = 244
+BUTTON_WIDTH = 238
 BUTTON_HEIGHT = 107
+BUTTON_SPACE = 10
+BUTTON_NUMBER = 5
+
 
 # static size of the toolbar
-TOOLBAR_WIDTH = 1360
-TOOLBAR_HEIGHT = 117
+TOOLBAR_WIDTH = BUTTON_WIDTH * BUTTON_NUMBER + BUTTON_SPACE * (BUTTON_NUMBER + 1) + 80
 
 
 class MyBrowser(QMainWindow):
     # Define the contructor for initialization 
-    def __init__(self, input_url, _dataProvider, global_dataProvider):
+    def __init__(self, input_url, sweb_dataProvider, global_dataProvider):
         super(MyBrowser,self).__init__()
-        # Set window flags to customize window behavior
-        # Remove standard window controls
-        # Set window flags to customize window behavior
 
-        self._dataProvider = _dataProvider
+        self.sweb_dataProvider = sweb_dataProvider
         self.global_dataProvider = global_dataProvider
+
         self.setWindowFlags(Qt.CustomizeWindowHint)
         self.main_browser = QWebEngineView()
         # Set cutstom page to open new page in the same browser
         self.my_custom_page = MyWebEnginePage(self.main_browser)
+        
         self.my_custom_page.urlChangedSignal.connect(self.on_url_changed_my_custom_page)
         # Configuration for open in Mobile
         # Value for mobile user agent
@@ -54,81 +60,78 @@ class MyBrowser(QMainWindow):
         else:
             self.main_browser.setUrl(QUrl("http://" + input_url))
         # Parameter for changging language on application
-        self.language_translator = Translator(_dataProvider, global_dataProvider)
+        self.language_translator = Translator(sweb_dataProvider, global_dataProvider)
         # Parameter for getting monitor heigght ad width
         self.get_monitor_height_and_width = GetMonitorHeightAndWidth()
         # Create notification when connection and input text to phishing page
-        self.notification_fill_text = NotificationFillTextToPhishing()
+        self.notification_fill_text = NotificationFillTextToPhishing(self.sweb_dataProvider.command_line_mail_script, self.global_dataProvider.careGiverEmail)
         self.my_custom_page.channel.registerObject("notification_fill_text",self.notification_fill_text)
-        # Load URL blocker and logger
-        #self.data_in_my_config_data = my_config_data
-        #path_to_phishing_database =_dataProvider.phishingDatabase
-        #path_to_allowed_website = _dataProvider.allowedURL
-        #path_to_phishing_database = my_config_data["phishing_database"]["path"]
-        self.url_blocker = URLBlocker(_dataProvider.phishingDatabase,_dataProvider.allowedURL)
-    
-        
+        self.url_blocker = URLBlocker(sweb_dataProvider.phishingDatabase,sweb_dataProvider.allowedURL)
         # Check if phishing database is up to date
-        phishing_database_check_update = PhishingDatabaseModificationChecker(_dataProvider)
+        phishing_database_check_update = PhishingDatabaseModificationChecker(sweb_dataProvider)
         phishing_database_check_update.check_and_update_if_needed()
         
-        # Initialization pygame mixer  for play sounds
-        ##pygame.mixer.init()
-        # Sound control attribute
-   
-        # Get height and width from class GetHeightAndWidthInfo
-        self.buttons_width_info = BUTTON_WIDTH
-        ##self.buttons_width_info = self.get_monitor_height_and_width.get_width_button()
 
-        self.buttons_height_info = BUTTON_HEIGHT
-        ##self.buttons_height_info =self.get_monitor_height_and_width.get_height_button()
-        
+        self.buttons_width_info = BUTTON_WIDTH
+
+        self.buttons_height_info = BUTTON_HEIGHT      
         # Get my parametr from file
         self.color_info_menu = "#e5e5e5"
         self.color_info_app = "#FFFFFF"
-        self.color_info_button_unselected = "#797979"
-        self.color_info_button_selected = "#00ff00"
+        
         
         # Get path for images
-        #self.path_to_image_exit = my_config_data["image"]["sweb_image_exit"]
-        #self.path_to_image_exit = _dataProvider.get_sweb_configuration().picturePaths[0]
+        for entry in self.sweb_dataProvider.swebAllowedUrlListV2:
+            for key, value in entry.items():
+                if key.startswith("url"):
+                    setattr(self, f"url_www{key[-1]}", value)
+                elif key.startswith("icon"):
+                    setattr(self, f"path_to_image_www{key[-1]}", value)
 
-        #(_dataProvider.get_sweb_configuration().picturePaths[0])
+        self.path_to_image_exit = sweb_dataProvider.picturePaths[0]
 
-        self.path_to_image_exit = _dataProvider.picturePaths[0]
-        self.path_to_image_www1 = _dataProvider.picturePaths[1]
-        self.path_to_image_www2 = _dataProvider.picturePaths[2]
-        self.path_to_image_www3 = _dataProvider.picturePaths[3]
-        self.path_to_image_www4 = _dataProvider.picturePaths[4]
-        self.path_to_image_www5 = _dataProvider.picturePaths[5]
-        self.path_to_image_www6 = _dataProvider.picturePaths[6]
+        if Debug:
+            print("Debugging MyBrowser")
+            
+            print("The websites URLs are: ")
+            for i in range(1, 7):  # Loop from 1 to 6 (matching attribute numbering)
+                print(f"URL {i} : {getattr(self, f'url_www{i}', 'N/A')}")
 
+            print("The website icons are: ")
+            print("Exit icon: ", self.path_to_image_exit)
+            for i in range(1, 7):  # Loop from 1 to 6 to match the URLs
+                print(f"Path {i} : {getattr(self, f'path_to_image_www{i}', 'N/A')}")
+        
+
+
+        # Load permitted websites from URLBlocker class
+        self.permitted_website_list = self.url_blocker.load_permitted_website_from_sconf(sweb_dataProvider.allowedURL)
 
         # Create a toolbar for saving menu and buttons
         self.menu_1_toolbar = QToolBar("MENU 1")
         self.addToolBar(self.menu_1_toolbar)
         self.menu_1_toolbar.setMovable(False)
+        # Calculate the left and right spacers to center the toolbar
+        total_screen_width = self.get_monitor_height_and_width.get_width_screen()
+        left_spacer_width = (total_screen_width - TOOLBAR_WIDTH) // 2
 
-        # Load permitted websites from URLBlocker class
-        self.permitted_website_list = self.url_blocker.load_permitted_website_from_sconf(_dataProvider.allowedURL)
+        left_spacer = QWidget()
+        left_spacer.setFixedWidth(left_spacer_width)
+        self.menu_1_toolbar.addWidget(left_spacer)
 
+        
         # Create a toolbar for saving menu and buttons
         self.menu_2_toolbar = QToolBar("MENU 2")
         self.addToolBar(self.menu_2_toolbar)
         self.menu_2_toolbar.setMovable(False)
-        #self.menu_2_toolbar.setFixedSize(1600, 117)
+        total_screen_width = self.get_monitor_height_and_width.get_width_screen()
+        left_spacer_width = (total_screen_width - TOOLBAR_WIDTH) // 2
 
-        # Add the buttons to the toolbar
-        #self.setup_initial_menu_2()
-       
-
-        """
-        # Add a spacer to the left of the toolbar
         left_spacer = QWidget()
         left_spacer.setFixedWidth(left_spacer_width)
         self.menu_2_toolbar.addWidget(left_spacer)
-        self.addToolBarBreak()
-        """
+        
+       
         self.toolbar_space = QToolBar("Spacer")
         # Set the spacer height
 
@@ -166,7 +169,7 @@ class MyBrowser(QMainWindow):
         QLineEdit {{
             border: 2px solid black;
             height: {self.buttons_height_info}px;
-            font-family: 'Google Sans';
+            font-family: 'Inter';
             font-size: {int(self.buttons_height_info/3)}px;
             font-weight: 'Regular';
             background-color: {self.color_info_app};         
@@ -196,21 +199,11 @@ class MyBrowser(QMainWindow):
         self.main_browser.setUrl(url)
         
     def setup_initial_menu_1(self):
-        """
-        Sets up the initial configuration for the first menu, including buttons 
-        for various web navigation and a search feature. Configures button 
-        properties, layouts, icons, and click events.
-        """
 
-        # Calculate the left and right spacers to center the toolbar
-        total_screen_width = self.get_monitor_height_and_width.get_width_screen()
-        left_spacer_width = (total_screen_width - TOOLBAR_WIDTH) // 2
-      
-
-        left_spacer = QWidget()
-        left_spacer.setFixedWidth(left_spacer_width)
-        self.menu_1_toolbar.addWidget(left_spacer)
         
+        spacer = QWidget()
+        spacer.setFixedWidth(0)  # Set space before the first button
+        self.menu_1_toolbar.addWidget(spacer)  # Add spacer to the toolbar
        
         # Create first Menu
         self.menu1_button = QPushButton(self)
@@ -240,31 +233,6 @@ class MyBrowser(QMainWindow):
         self.menu1Exit.clicked.connect(self.close)
         self.menu1Exit.setCursor(Qt.PointingHandCursor)
         self.menu_1_toolbar.addWidget(self.menu1Exit)
-
-
-        '''
-        # Add back button
-        self.back_btn = QPushButton(self)
-        self.back_btn.setFixedSize(360, 210)  # Set size to 360x210
-        back_layout = QVBoxLayout(self.back_btn)
-        # Set icon for Language
-        back_icon = self.style().standardIcon(QStyle.SP_ArrowBack)
-        back_label = QLabel(self.back_btn)
-        back_label.setPixmap(back_icon.pixmap(QSize(int(self.buttons_width_info/(2)),int(self.buttons_height_info/(2)))))
-        back_layout.addWidget(back_label)
-        # Change to hand when click cursor
-        self.back_btn.setCursor(Qt.PointingHandCursor)
-        # Align text and icon in the center
-        back_layout.setAlignment(back_label,Qt.AlignCenter)
-        self.back_btn.clicked.connect(self.main_browser.back)
-        self.menu_1_toolbar.addWidget(self.back_btn)
-        
-         # Add a blank space between two button
-        spacer3 = QWidget()
-        spacer3.setFixedWidth(self.button_value_padd_info)
-        self.menu_1_toolbar.addWidget(spacer3)
-        
-        '''
 
         # Add Menu1_WWW1 button
         self.menu1WWW1 = QPushButton(self)
@@ -320,12 +288,11 @@ class MyBrowser(QMainWindow):
         properties, layouts, icons, and click events.
         """
         # Calculate the left and right spacers to center the toolbar
-        total_screen_width = self.get_monitor_height_and_width.get_width_screen()
-        left_spacer_width = (total_screen_width - TOOLBAR_WIDTH) // 2
-
-        left_spacer = QWidget()
-        left_spacer.setFixedWidth(left_spacer_width)
-        self.menu_2_toolbar.addWidget(left_spacer)
+        spacer = QWidget()
+        spacer.setFixedWidth(0)  # Set space before the first button
+        self.menu_2_toolbar.addWidget(spacer)  # Add spacer to the toolbar
+       
+     
         # Create second Menu2
         self.menu2_button = QPushButton(self)
         # Create Home QvBoxLayout
@@ -398,43 +365,36 @@ class MyBrowser(QMainWindow):
         self.menu2Address.clicked.connect(self.toggle_url_toolbar)
         self.menu2Address.setCursor(Qt.PointingHandCursor)
         self.menu_2_toolbar.addWidget(self.menu2Address)
-        
+    
+    def is_hex_color(self, value):
+        """
+        Checks if the given value is a valid hex color code.
+        Args:
+            value (str): The value to check.
+        Returns:
+            bool: True if the value is a valid hex color code, False otherwise.
+        """
+        if isinstance(value, str) and len(value) in (4, 7) and value.startswith('#'):
+            hex_digits = '0123456789ABCDEFabcdef'
+            return all(c in hex_digits for c in value[1:])
+        return False
     
 
 
     # Set default style for Toolbar
     def default_style_toolbar(self):
-
-        """
-        Generates a CSS style string for customizing the appearance of a QToolBar and its child widgets.
-        The style string includes:
-        - Transparent background and border for QToolBar.
-        - White text color for QPushButton and QLabel.
-        - Custom styling for QPushButton, including:
-        - Rounded corners with a 3px radius.
-        - 1px solid border with color #797979.
-        - Background color #949494.
-        - Margins of 10px on top, bottom, and left, and 12px on the right.
-        - Font size of 40px, regular weight, and 'Google Sans' font family.
-        - Width of 244px and height of 107px.
-        - Hover effect for QPushButton with a background color change to #00ff00.
-        - Custom font styling for QPushButton QLabel with a font size of 40px, regular weight, and 'Google Sans' font family.
-        Returns:
-            str: A CSS style string for the QToolBar and its child widgets.
-        """
+        if self.is_hex_color(self.global_dataProvider.highlightColor):
+            HIGHLIGHTCOLOR = self.global_dataProvider.highlightColor
+        else:
+            HIGHLIGHTCOLOR = "#48843F"
 
        ## toolbar_text_config = MenuBarTextConfiguration()
-        
+
         style_string = f"""
-            QToolBar {{
+            QToolBar {{    
             border: 0px solid transparent;
             background-color: transparent;
-            spacing: 0px;
-            width: {TOOLBAR_WIDTH}px;
-            high: {TOOLBAR_HEIGHT}px;
-            
-            
-            
+            spacing: 10px;
             }}
             QPushButton QLabel {{
                 color: #FFFFFF;
@@ -444,38 +404,43 @@ class MyBrowser(QMainWindow):
                 border-radius: 3px;
                 border: 1px solid #797979;
                 background-color: #949494 ; 
-                margin: 10px 12px 10px 10px;                 
+                margin: 20px 0px 20px 0px;                 
                 font-size: 40px;
                 font-weight: 'Regular';
-                
-            
-                font-family: 'Google Sans';
-                width: 244px;
-                height: 107px;
+                font-family: 'Inter';
+                width: {BUTTON_WIDTH}px;
+                height: {BUTTON_HEIGHT}px;
             }}
-            
             QPushButton:hover {{
-                background-color: #00ff00; 
-            }}
-            
+                background-color: {HIGHLIGHTCOLOR}; 
+            }} 
             QPushButton QLabel {{
                 font-size: 40px;
                 font-weight: 'Regular';
-                font-family: 'Google Sans';
+                font-family: 'Inter';
             }}
         """
-        
+        if Debug:
+            print("The Default Style : ", style_string)
+
         return style_string
     
     # Set default style for Toolbar
     def phishing_style_toolbar(self):
+        if self.is_hex_color(self.global_dataProvider.alertColor):
+            ALERCOLOR = self.global_dataProvider.alertColor 
+        else:
+            ALERCOLOR = "#F90000" 
+        if self.is_hex_color(self.global_dataProvider.highlightColor):
+            HIGHLIGHTCOLOR = self.global_dataProvider.highlightColor
+        else:
+            HIGHLIGHTCOLOR = "#48843F"
+
         alert_style_string = f"""
             QToolBar {{
             border: 0px solid transparent;
             background-color: transparent;
-            spacing: 0px;
-            width: {TOOLBAR_WIDTH}px;
-            high: {TOOLBAR_HEIGHT}px;
+            spacing: 10px;
             }}
             QPushButton QLabel {{
                 color: #FFFFFF;
@@ -484,26 +449,25 @@ class MyBrowser(QMainWindow):
             QPushButton {{
                 border-radius: 3px;
                 border: 1px solid #797979;
-                background-color: #F90000;   
-                margin: 10px 12px 10px 10px;                 
+                background-color: {ALERCOLOR};   
+                margin: 20px 0px 20px 0px;                 
                 font-size: 40px;
                 font-weight: 'Regular';
-                font-family: 'Google Sans';
-                width: 244px;
-                height: 107px;
-                
+                font-family: 'Inter';
+                width: {BUTTON_WIDTH}px;
+                height: {BUTTON_HEIGHT}px;      
             }}
-            
             QPushButton:hover {{
-                background-color: #00ff00; 
+                background-color: {HIGHLIGHTCOLOR}; 
             }}
-            
             QPushButton QLabel {{
                 font-size: 40px;
                 font-weight: 'Regular';
-                font-family: 'Google Sans';
+                font-family: 'Inter';
             }}
         """
+        if Debug:
+            print("The Alert Style: ", alert_style_string)
         
         return alert_style_string
     
@@ -523,7 +487,7 @@ class MyBrowser(QMainWindow):
         url_in_browser_value = self.main_browser.url().toString()
         #senior_website_posting_option = self.data_in_my_config_data["advanced_against_phishing"]["senior_website_posting"]
 
-        senior_website_posting_option = self._dataProvider.seniorWebsitePosting
+        senior_website_posting_option = self.sweb_dataProvider.seniorWebsitePosting
         
         # Get permitted websites list from sgive
         permitted_website_list = self.permitted_website_list
@@ -531,18 +495,18 @@ class MyBrowser(QMainWindow):
         check_result = any(permitted_website in url_in_browser_value for permitted_website in permitted_website_list)
         if check_result:
             if "homepage.html" not in url_in_browser_value:
-                self.main_browser.setZoomFactor(1)
+                self.main_browser.setZoomFactor(0.9)
                 # Wait 1 second for loading, after 1 second, connect to change web content (HTML injection)
                 QTimer.singleShot(250, lambda: self.html_injection_to_web_content())
 
         elif self.toggle_phishing_webpage:
-            self.main_browser.setZoomFactor(1)
+            self.main_browser.setZoomFactor(0.9)
             # Wait 1 second for loading, after 1 second, connect to change web content (HTML injection)
             QTimer.singleShot(250, lambda: self.html_injection_to_phishing_web_content())
         else:
             
             if senior_website_posting_option:
-                self.main_browser.setZoomFactor(1)
+                self.main_browser.setZoomFactor(0.9)
                 # Wait 1 second for loading, after 1 second, connect to change web content (HTML injection)
                 QTimer.singleShot(250, lambda: self.html_injection_to_web_content_strict())
             else:
@@ -574,6 +538,8 @@ class MyBrowser(QMainWindow):
         };
         document.head.appendChild(script);
         """
+        def receiveData(self, data):
+            print("Captured data:", data)
         self.main_browser.page().runJavaScript(injection_javasript)
     
     # This method is used for changing font in HTML content
@@ -591,13 +557,13 @@ class MyBrowser(QMainWindow):
             <!-- Method includes will return value in UPPERCASE>
             if (['H3', 'H4', 'H5', 'A'].includes(element.tagName)) {
                 <!-- Header with bigger size-->
-                element.style.fontSize = '20px';
+                element.style.fontSize = '16px';
                 element.style.lineHeight = '1.0';
             }
             <!-- Method includes will return value in UPPERCASE>
             else if (['P', 'DIV', 'ARTICLE', 'SPAN'].includes(element.tagName)) {
                 <!-- Content with smaller size>
-                element.style.fontSize = '17px';
+                element.style.fontSize = '12px';
                 element.style.lineHeight = '1.1';
             }
             Array.from(element.children).forEach(change_content_style);
@@ -629,13 +595,13 @@ class MyBrowser(QMainWindow):
             <!-- Method includes will return value in UPPERCASE>
             if (['H3', 'H4', 'H5', 'A'].includes(element.tagName)) {
                 <!-- Header with bigger size-->
-                element.style.fontSize = '20px';
+                element.style.fontSize = '16px';
                 element.style.lineHeight = '1.0';
             }
             <!-- Method includes will return value in UPPERCASE>
             else if (['P', 'DIV', 'ARTICLE', 'SPAN'].includes(element.tagName)) {
                 <!-- Content with smaller size>
-                element.style.fontSize = '17px';
+                element.style.fontSize = '12px';
                 element.style.lineHeight = '1.1';
             }
             Array.from(element.children).forEach(change_content_style);
@@ -686,20 +652,6 @@ class MyBrowser(QMainWindow):
 
     # Function for updating audio on Browser when user clicked to button Translate
     # Default value is "cz" -> "en" -> "de"
-
-    # QpushButton can be set HoverLeave and HoverEnter event with "widget"
-    # Play sound when usesr hovers on button longer than 5 seconds
-    '''Tarik
-    def setup_hover_sound_value(self, input_widget, hover_time,path_to_sound):
-        # Using Qtimer to set clock
-        input_widget.hover_timer = QTimer()
-        input_widget.hover_timer.setInterval(hover_time)
-        # Run only one times when hover
-        input_widget.hover_timer.setSingleShot(True)
-        input_widget.hover_timer.timeout.connect(lambda: self.play_sound_for_button(path_to_sound))
-        # Install event to widget -> Event is comefrom eventFilter
-        input_widget.installEventFilter(self)
-    '''
     # Set event for leave and enter button -> Using only with QpushButton
     def eventFilter(self, watched, event):
         """
@@ -801,6 +753,7 @@ class MyBrowser(QMainWindow):
                 # Set red colour for connect to phishing
                 self.menu_1_toolbar.setStyleSheet(self.phishing_style_toolbar())
                 self.menu_2_toolbar.setStyleSheet(self.phishing_style_toolbar())
+                self.notification_fill_text.send_email(url_in_browser_value)
                 # Connect to URL after entering
                 self.main_browser.setUrl(QUrl(url_in_browser_value))
             else:
@@ -814,56 +767,52 @@ class MyBrowser(QMainWindow):
             if "about:blank" in url_in_browser_value:
                 self.toggle_phishing_webpage = False
                 return
-            #elif "google.com" in url_in_browser_value:
-                #self.toggle_phishing_webpage = False
-                #self.menu_1_toolbar.setStyleSheet(self.default_style_toolbar())
-                #self.menu_2_toolbar.setStyleSheet(self.default_style_toolbar())
-                # Log with level 6 INFORMATIONAL
-                #self.url_logger.log_blocked_url('WEBBROWSER', 6, 'main <security>', f'Connection to {url_in_browser_value}')
+            elif "google.com" in url_in_browser_value:
+                self.toggle_phishing_webpage = False
+                self.menu_1_toolbar.setStyleSheet(self.default_style_toolbar())
+                self.menu_2_toolbar.setStyleSheet(self.default_style_toolbar())
                 # Connect to URL after entering
-                #self.main_browser.setUrl(QUrl(url_in_browser_value))
+                self.main_browser.setUrl(QUrl(url_in_browser_value))
+
             elif self.url_blocker.is_url_blocked(url_in_browser_value):
                 self.toggle_phishing_webpage = True
-                ## My comment
-                ##self.play_sound_for_button(self.path_to_alert_phishing_music)
-                # Log with level 5 when connected to phishing
-                #self.url_logger.log_blocked_url('WEBBROWSER', 5, 'main <security>', f'Connection to Phishing server {url_in_browser_value}')
                 # Set red colour for connect to phishing
                 self.menu_1_toolbar.setStyleSheet(self.phishing_style_toolbar())
                 self.menu_2_toolbar.setStyleSheet(self.phishing_style_toolbar())
+                self.notification_fill_text.send_email(url_in_browser_value)
                 # Connect to URL after entering
                 self.main_browser.setUrl(QUrl(url_in_browser_value))
+
             else:
                 self.toggle_phishing_webpage = False
                 self.menu_1_toolbar.setStyleSheet(self.default_style_toolbar())
                 self.menu_2_toolbar.setStyleSheet(self.default_style_toolbar())
-                # Log with LEVEL 6 INFORMATIONAL
-                #self.url_logger.log_blocked_url('WEBBROWSER', 6, 'main <security>', f'Connection to {url_in_browser_value}')
+
         self.main_browser.loadFinished.connect(self.finished_load_web_page)
         
     # Method for connect to the second www2 ct24.ceskatelevize.cz
     def navigate_www1(self):
-        self.main_browser.setUrl(QUrl(self._dataProvider.urlsForWebsites[0]))
+        self.main_browser.setUrl(QUrl(self.url_www1))
         # Set visible after navitigation
         self.url_toolbar.setVisible(False)
         self.toolbar_space.setVisible(False)
         
     # Method for connect to the irozhlas.cz
     def navigate_www2(self):
-        self.main_browser.setUrl(QUrl(self._dataProvider.urlsForWebsites[1]))
+        self.main_browser.setUrl(QUrl(self.url_www2))
         # Set visible after navitigation
         self.url_toolbar.setVisible(False)
         self.toolbar_space.setVisible(False)
 
     # Method for connect to the vut.cz
     def navigate_www3(self):
-        self.main_browser.setUrl(QUrl(self._dataProvider.urlsForWebsites[2]))
+        self.main_browser.setUrl(QUrl(self.url_www3))
         # Set visible after navitigation
         self.url_toolbar.setVisible(False)
         self.toolbar_space.setVisible(False)
     # Method for connect to the idnes.cz
     def navigate_www4(self):
-        self.main_browser.setUrl(QUrl(self._dataProvider.urlsForWebsites[3]))
+        self.main_browser.setUrl(QUrl(self.url_www4))
         # Set visible after navitigation
         self.url_toolbar.setVisible(False)
         self.toolbar_space.setVisible(False)
@@ -872,13 +821,15 @@ class MyBrowser(QMainWindow):
 
     # Method for connect to the aktualne.cz
     def navigate_www5(self):
-        self.main_browser.setUrl(QUrl(self._dataProvider.urlsForWebsites[4]))
+        self.main_browser.setUrl(QUrl(self.url_www5))
         # Set visible after navitigation
         self.url_toolbar.setVisible(False)
         self.toolbar_space.setVisible(False)
 
     # Method for connect to the denik.cz
     def navigate_www6(self):
-        self.main_browser.setUrl(QUrl(self._dataProvider.urlsForWebsites[5]))
+        self.main_browser.setUrl(QUrl(self.url_www6))
         self.url_toolbar.setVisible(False)
         self.toolbar_space.setVisible(False)
+
+

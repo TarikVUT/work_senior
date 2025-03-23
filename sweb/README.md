@@ -47,20 +47,83 @@ More details on how the phishing detector works will be provided in the document
 
 ## Installation
 
-!!!Ensure you have Python3 or pip installed on your system.
-Follow these steps to set up Web Browser in FEDORA operating system:
+Here’s a more polished and professional version of your instructions for GitHub:  
 
-```bash
-# Install required Python packages with dnf if using Fedora
-sudo dnf install python3
+---
 
-# Clone project repository
-git clone https://github.com/forsenior/senior-os
+### Launching the Application  
 
-# Install requirements from the requirements.txt in sweb dir
-py -m pip install -r requirements.txt
+To launch the application, follow these steps:  
 
-```
+1. Download the latest ISO from the repository.  
+2. Create a new virtual machine in your preferred virtualization software (such as VirtualBox, VMware, or QEMU).  
+3. Attach the downloaded ISO to the virtual machine. The ISO is based on a Linux distribution (Archie).  
+4. Start the virtual machine. If the application does not launch automatically, open the terminal and run:  
+
+   ```sh
+   srun
+   ```  
+
+---
+
+### Installation and Development Setup  
+
+For easier modifications and a better overview of the application, follow these steps:  
+
+#### Step 1: Install Poetry  
+
+SWEB uses [Poetry](https://python-poetry.org/) for dependency management and packaging. If you don’t have Poetry installed, follow the official [installation guide](https://python-poetry.org/docs/#installation).  
+
+#### Step 2: Clone the Repository and Install Dependencies  
+
+Once Poetry is installed, proceed with the following:  
+
+```sh
+# Clone the project repository
+git clone https://github.com/forsenior/senior-os  
+
+# Navigate into the project directory
+cd sweb  
+
+# Build and install dependencies
+poetry build  
+poetry install  
+```  
+
+Repeat these steps for the `sconf` and `srun` directories as well:  
+
+```sh
+cd ..  
+cd sconf  
+poetry build  
+poetry install  
+
+cd ..  
+cd srun  
+poetry build  
+poetry install  
+```  
+
+#### Running the Application  
+
+To run SWEB, use:  
+
+```sh
+poetry run sweb  
+```  
+
+Alternatively, after setting up the configuration file, you can run:  
+
+```sh
+poetry run sweb  
+```  
+
+**Supported Python Versions:**  
+This program is tested and optimized for **Python 3.12**.  
+
+---
+
+This version is clearer, more structured, and professional while keeping the instructions concise. Let me know if you'd like any further refinements! 🚀
       
 
 ## The demonstration video

@@ -47,9 +47,7 @@ More details on how the phishing detector works will be provided in the document
 
 ## Installation
 
-Here’s a more polished and professional version of your instructions for GitHub:  
 
----
 
 ### Launching the Application  
 
@@ -121,9 +119,7 @@ poetry run sweb
 **Supported Python Versions:**  
 This program is tested and optimized for **Python 3.12**.  
 
----
 
-This version is clearer, more structured, and professional while keeping the instructions concise. Let me know if you'd like any further refinements! 🚀
       
 
 ## The demonstration video

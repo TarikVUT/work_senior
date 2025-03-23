@@ -53,9 +53,9 @@ More details on how the phishing detector works will be provided in the document
 
 To launch the application, follow these steps:  
 
-1. Download the latest ISO from the repository.  
+1. Download the latest ISO from the repository [here](https://github.com/forsenior/senior-os/releases).  
 2. Create a new virtual machine in your preferred virtualization software (such as VirtualBox, VMware, or QEMU).  
-3. Attach the downloaded ISO to the virtual machine. The ISO is based on a Linux distribution (Archie).  
+3. Attach the downloaded ISO to the virtual machine or create a bootable USB flash drives. The ISO is based on a Linux distribution (Archie).  
 4. Start the virtual machine. If the application does not launch automatically, open the terminal and run:  
 
    ```sh
@@ -110,14 +110,11 @@ To run SWEB, use:
 poetry run sweb  
 ```  
 
-Alternatively, after setting up the configuration file, you can run:  
-
-```sh
-poetry run sweb  
-```  
-
 **Supported Python Versions:**  
 This program is tested and optimized for **Python 3.12**.  
+> [!NOTE]  
+> Note: If you try to run the SWEB application independently, you may encounter an error due to the configuration file path. By default, config.json should be located at:
+> "$HOME/$USER/.sconf/config.json"
 
 
       

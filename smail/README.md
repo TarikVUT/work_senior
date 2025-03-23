@@ -5,35 +5,78 @@ The developed email client is easy to use and contains only features that a seni
 
 ## Environment for reading email messages
 SMAIL has an environment specifically designed for reading email messages in a user-friendly way, with large, clear buttons and text.
-![menu1](https://github.com/forsenior/senior-os/blob/main/sconf/style/style_images/smail_gui_style_menu_message_1.png)
+![menu1](https://github.com/forsenior/senior-os/blob/9651ba7d8c7fbd04c794c4344ed667deeb5b5458/smail/screens/smail_screen_1.png)
 
 ## Environment for writing email messages
 The environment for writing emails is as easy as possible, with predefined contacts available for convenience.
-![menu2](https://github.com/forsenior/senior-os/blob/main/sconf/style/style_images/smail_gui_style_global.png)
+![menu2](https://github.com/forsenior/senior-os/blob/9651ba7d8c7fbd04c794c4344ed667deeb5b5458/smail/screens/smail_screen_2.png)
 
-## Warning when writing sensitive data
+## Confirmation of Successful Email Sending
+After successfully sending an email, the application displays a confirmation message to inform the user that their email has been sent.
+![alert](https://github.com/forsenior/senior-os/blob/b772ef10bc80c3467e30be05966db91266d85aa3/smail/screens/smail_email_sent_en.png)
+
+## Warning when sending sensitive data
 The application warns users when they are about to send sensitive information, adding an additional layer of security.
-![alert](https://github.com/forsenior/senior-os/blob/main/sconf/style/style_images/smail_gui_style_menu_alert_1.png)
+![alert1](https://github.com/forsenior/senior-os/blob/b772ef10bc80c3467e30be05966db91266d85aa3/smail/screens/smail_sensitive_information_alert_en.png)
+
+## Warning when leaving unconfirmed email
+The application warns users when they attempt to leave an unfinished email draft. Users are prompted to confirm whether they want to discard the email before proceeding.
+![alert2](https://github.com/forsenior/senior-os/blob/b772ef10bc80c3467e30be05966db91266d85aa3/smail/screens/smail_unconfirmed-email_alert_en.png)
+
+## 1) For launching the application, use the following procedure.
+Download the latest ISO from the [repository](https://github.com/forsenior/senior-os/releases).
+Create a new virtual machine in your chosen virtualization environment (such as VirtualBox, VMware, or QEMU), and add the downloaded ISO. 
+This ISO is distributed as a Linux-based system.
+Start the virtual environment, and if the application does not launch automatically, run the following command in the terminal:
+```bash
+srun
+```
+
+## 2) For easier modifications and an overview of the application, follow this procedure.
 
 ## Installation
 To get started with SMAIL, follow these steps to clone the repository and install dependencies:
+
+### Step 1: Install Poetry
+SMAIL uses Poetry for dependency management and packaging. 
+If you don't have Poetry installed, you will need to install it first. 
+You can follow this [step-by-step guide on how to install Poetry](https://gist.github.com/Isfhan/b8b104c8095d8475eb377230300de9b0).
+
+### Step 2: Clone Repository and Install Dependencies
+After installing Poetry, you can continue with the following steps:
+
 ```bash
 # Clone project repository
 git clone https://github.com/forsenior/senior-os
 
+# Navigate into the project directory
 cd smail
 
-# Install requirements from the requirements.txt file
-py -m pip install -r requirements.txt
+# Build and install dependencies using Poetry
+poetry build
+
+poetry install
+```
+Repeat these steps for the *sconf* and *srun* directories as well (cd .. -> cd sconf -> poetry build -> poetr...): 
+```bash
+#Run this command in the directory with the same name:
+poetry run srun
+#Or you can use this command, after you set up configuration file:
+poetry run smail
 ```
 Supported Python Versions: This program is tested and optimized for Python 3.12.
 
 ## Configuration requirement for SMAIL
-To ensure proper functioning of the SMAIL email client, it is recomended to first edit configuration files (SOS-conf.json). 
+
+To ensure proper functioning of the SMAIL email client, it is recomended to first edit configuration files.
+For temporary configuration, you can edit the main configuration file config.json, located in the home directory (For example: C:\Users\user\.sconf\config.json). 
+If it is not present, copy or create a config.json file (The configuration file should be automatically created after running *srun*). 
+However, for permanent settings that will work continuously, you need to modify the configuration file `smail_configuration.py` located in `sconf/src/sconf/models/`.
 During this process, enter your own email address and password to personalize the application. 
 Default settings are available, but for enhanced security and personalization, using your own credentials is highly encouraged.
 
 ### Password generation for SMAIL
+
 To connect to your Gmail account from a non-web environment, such as SMAIL app, you'll need to generate an app password. 
 Follow these steps to obtain the app password:
 
@@ -59,18 +102,24 @@ If you cant find the correct section use this link: [App passwords](https://myac
 
 To launch the application, follow these steps:
 
-1. Open your preferred IDE such as PyCharm or any other suitable development environment.
+1. **Open your preferred IDE**  
+   Open your preferred development environment, such as PyCharm or any other suitable IDE.
 
-2. Navigate to the smail directory
+2. **Navigate to the smail directory**  
+   Use your IDE's file explorer to navigate to the `smail` directory within the cloned repository.
 
-3. Open the smail.py file of the application.
+3. **Open a terminal in this folder**  
+   Make sure you have an active terminal session open in the `smail` directory.
 
-4. Ensure that all necessary dependencies are installed ([Installation](#installation)).
+4. **Ensure that all necessary dependencies are installed**  
+   Make sure that all dependencies are properly installed. You can verify this by following the [Installation](#installation) instructions.
 
-5. Before executing the application, ensure that you have set up the necessary configurations and generated the required app password for connection, as outlined in the previous section.
+5. **Set up configurations and app password**  
+   Before running the application, ensure that all configurations are set and that you have generated an app password as mentioned in the [Password generation](#password-generation-for-smail) section.
 
-6. Once everything is set up, run the application by clicking on the "Run" button within your IDE or execute the following commands:
+6. **Run the application**  
+   Once everything is set up, you can start the application by running the command:
 ```bash
 cd smail
-python smail.py
+poetry run smail
 ```

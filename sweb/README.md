@@ -43,9 +43,9 @@ This feature is the core of our app, alerting users if a website is potentially 
 
 - Phishing Warning: If the user enters a known phishing URL, the toolbar background changes to red to ensure easy visibility, especially for seniors.
 - Below is a diagram illustrating the process of detecting phishing URLs.
-<p align="center">
+
  ![phishing_detection](https://github.com/user-attachments/assets/109092d8-c72f-40e6-a30e-fa3ab3b52e04)
-</p>
+
 More details on how the phishing detector works will be provided in the documentation.
 
 ## Installation

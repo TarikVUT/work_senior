@@ -14,7 +14,7 @@ Audio-Unterstützung, mehrsprachige Optionen und robuste Sicherheitsmaßnahmen g
 Nachfolgend finden Sie das Designkonzept des Webbrowsers:
 
 ## Überblick MENU1
-MENU1 bietet eine benutzerfreundliche Oberfläche mit vier großen, festen Schaltflächen, die speziell für eine einfache Navigation konzipiert wurden.
+MENU1 bietet eine benutzerfreundliche Oberfläche mit fünf  großen, festen Schaltflächen, die speziell für eine einfache Navigation konzipiert wurden.
 
 <img src="screens/sweb_screen_1.png" width="900" />
 

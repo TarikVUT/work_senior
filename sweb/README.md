@@ -15,7 +15,7 @@ audio support, multilingual options, and robust security measures to guard again
 Below is the design concept for the web browser:
 
 ## MENU1 Overview
-MENU1 provides a user-friendly interface with four large, fixed-size buttons, designed for easy navigation, especially for seniors.
+MENU1 provides a user-friendly interface with five large, fixed-size buttons, designed for easy navigation, especially for seniors.
 
 <img src="screens/sweb_screen_1.png" width="900" />
 

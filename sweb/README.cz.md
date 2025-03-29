@@ -14,7 +14,7 @@ podpora zvuku, možnosti více jazyků a robustní bezpečnostní opatření k o
 Níže je uveden návrh designu webového prohlížeče:
 
 ## Přehled MENU1
-MENU1 poskytuje uživatelsky přívětivé rozhraní se čtyřmi velkými tlačítky s pevnou velikostí, navrženými pro snadnou navigaci, zvláště pro seniory.
+MENU1 poskytuje uživatelsky přívětivé rozhraní se pěti velkými tlačítky s pevnou velikostí, navrženými pro snadnou navigaci, zvláště pro seniory.
 
 <img src="screens/sweb_screen_1.png" width="900" />
 

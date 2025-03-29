@@ -112,7 +112,7 @@ poetry run sweb
 
 **Unterstützte Python-Versionen:**  
 Dieses Programm wurde für **Python 3.12** getestet und optimiert.  
-> [!HINWEIS]  
+> [!NOTE]  
 > Falls Sie versuchen, die SWEB-Anwendung eigenständig auszuführen, können Fehler aufgrund des Konfigurationsdateipfads auftreten. Standardmäßig sollte sich die Datei config.json hier befinden:  
 > "$HOME/$USER/.sconf/config.json"
 

@@ -126,6 +126,3 @@ Fühlen Sie sich frei, Pull Requests einzureichen oder Probleme zu melden, falls
 ## Lizenz
 Dieses Projekt ist unter der MIT-Lizenz lizenziert.
 
-
-
-Übersetzt mit DeepL.com (kostenlose Version)

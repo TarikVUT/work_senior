@@ -112,7 +112,7 @@ poetry run sweb
 
 **Podporované verze Pythonu:**  
 Tento program je testován a optimalizován pro **Python 3.12**.  
-> [!POZNÁMKA]  
+> [!NOTE]
 > Pokud se pokusíte spustit aplikaci SWEB samostatně, můžete narazit na chybu kvůli umístění konfiguračního souboru. Ve výchozím nastavení by se config.json měl nacházet zde:  
 > "$HOME/$USER/.sconf/config.json"
 

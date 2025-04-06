@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QStyle, QLabel, QVBoxLayo
 from PyQt5.QtWidgets import QLineEdit, QPushButton, QToolBar, QWidget
 
 from PyQt5.QtCore import QEvent, QUrl, Qt, QTimer, QSize, pyqtSignal, QObject, pyqtSlot
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QKeyEvent
 from PyQt5.QtWidgets import QSizePolicy
 # Library for creating channel for monitoring input keyboard
 from PyQt5.QtWebChannel import QWebChannel
@@ -16,16 +16,21 @@ from sweb.language.language_translator import Translator
 from sweb.utils.monitor_provider import GetMonitorHeightAndWidth
 from sweb.phish.notification_email import NotificationFillTextToPhishing
 from sweb.browser.browser_core import MyWebEnginePage
+from sweb.ml.ml_check_url import PhishingURLDetector
+#from pynput import keyboard
+###from sweb.ui.detect_key import KeyPressFilter
 import os
+##from pynput.keyboard import Key, Listener
 # Set QT Environment Variables
 os.environ["QTWEBENGINE_DISABLE_SANDBOX"] = "1"
 # My main browser contains all GUI in this class (Toolbar, Buttons, URLbar)
-
+Debug = False
 ## static size of the button
 BUTTON_WIDTH = 238
 BUTTON_HEIGHT = 107
 BUTTON_SPACE = 10
 BUTTON_NUMBER = 5
+
 
 # static size of the toolbar
 TOOLBAR_WIDTH = BUTTON_WIDTH * BUTTON_NUMBER + BUTTON_SPACE * (BUTTON_NUMBER + 1) + 80
@@ -35,15 +40,20 @@ class MyBrowser(QMainWindow):
     # Define the contructor for initialization 
     def __init__(self, input_url, sweb_dataProvider, global_dataProvider):
         super(MyBrowser,self).__init__()
-        # Set window flags to customize window behavior
-        # Remove standard window controls
-        # Set window flags to customize window behavior
+        self.listen_for_keypress = False  # Start in idle mode
+        self.key_pressed_after_flag = False
+        self.key_press_counter = 0  # NEW
+        
+        # self.key_filter = KeyPressFilter(self)
+        # self.installEventFilter(self.key_filter)
+
 
         self.sweb_dataProvider = sweb_dataProvider
         self.global_dataProvider = global_dataProvider
 
         self.setWindowFlags(Qt.CustomizeWindowHint)
         self.main_browser = QWebEngineView()
+        self.ml_phishing_url_detector = PhishingURLDetector(sweb_dataProvider.phishingDetectionModel, sweb_dataProvider.phishingVectorizer)
         # Set cutstom page to open new page in the same browser
         self.my_custom_page = MyWebEnginePage(self.main_browser)
         
@@ -80,17 +90,31 @@ class MyBrowser(QMainWindow):
         # Get my parametr from file
         self.color_info_menu = "#e5e5e5"
         self.color_info_app = "#FFFFFF"
-        self.color_info_button_unselected = "#797979"
-        self.color_info_button_selected = "#00ff00"
+        
         
         # Get path for images
+        for entry in self.sweb_dataProvider.swebAllowedUrlListV2:
+            for key, value in entry.items():
+                if key.startswith("url"):
+                    setattr(self, f"url_www{key[-1]}", value)
+                elif key.startswith("icon"):
+                    setattr(self, f"path_to_image_www{key[-1]}", value)
+
         self.path_to_image_exit = sweb_dataProvider.picturePaths[0]
-        self.path_to_image_www1 = sweb_dataProvider.picturePaths[1]
-        self.path_to_image_www2 = sweb_dataProvider.picturePaths[2]
-        self.path_to_image_www3 = sweb_dataProvider.picturePaths[3]
-        self.path_to_image_www4 = sweb_dataProvider.picturePaths[4]
-        self.path_to_image_www5 = sweb_dataProvider.picturePaths[5]
-        self.path_to_image_www6 = sweb_dataProvider.picturePaths[6]
+
+        if Debug:
+            print("Debugging MyBrowser")
+            
+            print("The websites URLs are: ")
+            for i in range(1, 7):  # Loop from 1 to 6 (matching attribute numbering)
+                print(f"URL {i} : {getattr(self, f'url_www{i}', 'N/A')}")
+
+            print("The website icons are: ")
+            print("Exit icon: ", self.path_to_image_exit)
+            for i in range(1, 7):  # Loop from 1 to 6 to match the URLs
+                print(f"Path {i} : {getattr(self, f'path_to_image_www{i}', 'N/A')}")
+        
+
 
         # Load permitted websites from URLBlocker class
         self.permitted_website_list = self.url_blocker.load_permitted_website_from_sconf(sweb_dataProvider.allowedURL)
@@ -164,6 +188,10 @@ class MyBrowser(QMainWindow):
         }}        
         """)
         
+   
+
+
+
         # When text of URL is changed, check for URL Phishing
         self.url_bar.returnPressed.connect(self.navigate_to_url)
         self.url_toolbar.addWidget(self.url_bar)
@@ -353,12 +381,38 @@ class MyBrowser(QMainWindow):
         self.menu2Address.clicked.connect(self.toggle_url_toolbar)
         self.menu2Address.setCursor(Qt.PointingHandCursor)
         self.menu_2_toolbar.addWidget(self.menu2Address)
-        
     
+    def is_hex_color(self, value):
+        """
+        Checks if the given value is a valid hex color code.
+        Args:
+            value (str): The value to check.
+        Returns:
+            bool: True if the value is a valid hex color code, False otherwise.
+        """
+        if isinstance(value, str):
+            if not value.startswith('#'):
+                value = '#' + value
+                if Debug:
+                    print("Value of color is: ", value)  
+                if len(value) in (4, 7):
+                    hex_digits = '0123456789ABCDEFabcdef'
+                    if all(c in hex_digits for c in value[1:]):
+                        return value 
+            if isinstance(value, str) and len(value) in (4, 7) and value.startswith('#'):
+                hex_digits = '0123456789ABCDEFabcdef'
+                if all(c in hex_digits for c in value[1:]):
+                    return value
+            
+        return False
 
 
     # Set default style for Toolbar
     def default_style_toolbar(self):
+        if self.is_hex_color(self.global_dataProvider.highlightColor) != False:
+            HIGHLIGHTCOLOR = self.is_hex_color(self.global_dataProvider.highlightColor)
+        else:
+            HIGHLIGHTCOLOR = "#48843F"
 
        ## toolbar_text_config = MenuBarTextConfiguration()
 
@@ -367,7 +421,6 @@ class MyBrowser(QMainWindow):
             border: 0px solid transparent;
             background-color: transparent;
             spacing: 10px;
-            
             }}
             QPushButton QLabel {{
                 color: #FFFFFF;
@@ -384,29 +437,36 @@ class MyBrowser(QMainWindow):
                 width: {BUTTON_WIDTH}px;
                 height: {BUTTON_HEIGHT}px;
             }}
-            
             QPushButton:hover {{
-                background-color: #48843F; 
-            }}
-            
+                background-color: {HIGHLIGHTCOLOR}; 
+            }} 
             QPushButton QLabel {{
                 font-size: 40px;
                 font-weight: 'Regular';
                 font-family: 'Inter';
             }}
         """
-        
+        if Debug:
+            print("The Default Style : ", style_string)
+
         return style_string
     
     # Set default style for Toolbar
     def phishing_style_toolbar(self):
+        if self.is_hex_color(self.global_dataProvider.alertColor)!= False:
+            ALERCOLOR = self.is_hex_color(self.global_dataProvider.alertColor)
+        else:
+            ALERCOLOR = "#F90000" 
+        if self.is_hex_color(self.global_dataProvider.highlightColor)!= False:
+            HIGHLIGHTCOLOR = self.is_hex_color(self.global_dataProvider.highlightColor)
+        else:
+            HIGHLIGHTCOLOR = "#48843F"
+
         alert_style_string = f"""
             QToolBar {{
             border: 0px solid transparent;
             background-color: transparent;
             spacing: 10px;
-
-            
             }}
             QPushButton QLabel {{
                 color: #FFFFFF;
@@ -415,7 +475,7 @@ class MyBrowser(QMainWindow):
             QPushButton {{
                 border-radius: 3px;
                 border: 1px solid #797979;
-                background-color: #F90000;   
+                background-color: {ALERCOLOR};   
                 margin: 20px 0px 20px 0px;                 
                 font-size: 40px;
                 font-weight: 'Regular';
@@ -423,17 +483,17 @@ class MyBrowser(QMainWindow):
                 width: {BUTTON_WIDTH}px;
                 height: {BUTTON_HEIGHT}px;      
             }}
-            
             QPushButton:hover {{
-                background-color: #48843F; 
+                background-color: {HIGHLIGHTCOLOR}; 
             }}
-            
             QPushButton QLabel {{
                 font-size: 40px;
                 font-weight: 'Regular';
                 font-family: 'Inter';
             }}
         """
+        if Debug:
+            print("The Alert Style: ", alert_style_string)
         
         return alert_style_string
     
@@ -654,6 +714,8 @@ class MyBrowser(QMainWindow):
             self.main_browser.setUrl(QUrl("about:blank"))
             self.url_toolbar.setVisible(not self.url_toolbar.isVisible())
             self.toolbar_space.setVisible(not self.toolbar_space.isVisible())
+            self.menu_1_toolbar.setStyleSheet(self.default_style_toolbar())
+            self.menu_2_toolbar.setStyleSheet(self.default_style_toolbar())
 
     # This method is used for navigation URL bar
     def navigate_to_url(self):
@@ -668,8 +730,9 @@ class MyBrowser(QMainWindow):
         if self.global_dataProvider.protectionLevel == 2:
             web_url = self.url_blocker.find_url_with_value(url_in_bar_value)
             
-            if web_url != "None":
-
+            if web_url:
+                if Debug:
+                    print(f"The website {url_in_bar_value} is allowed")
                 # Set default style for toolbar
                 self.menu_1_toolbar.setStyleSheet(self.default_style_toolbar())
                 self.menu_2_toolbar.setStyleSheet(self.default_style_toolbar())
@@ -682,8 +745,35 @@ class MyBrowser(QMainWindow):
                 # Connect to URL after entering
                 self.main_browser.setUrl(QUrl(web_url)) 
             else:
-                print("URL is not permitted")
-                    
+                warning_style = """
+                <style>
+                    h1 {
+                        text-align: center;
+                        font-size: 50px;
+                        color: blue;
+                        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+                        animation: blink 1s infinite alternate;
+                    }
+                    @keyframes blink {
+                        0% { opacity: 1; }
+                        100% { opacity: 0.6; }
+                    }
+                </style>
+                """
+                if Debug:
+                    print(f"The website {self.url_blocker.find_url_with_value(url_in_bar_value)} is not allowed")
+                self.menu_1_toolbar.setStyleSheet(self.default_style_toolbar())
+                self.menu_2_toolbar.setStyleSheet(self.default_style_toolbar())
+                self.url_bar.clear()
+                self.url_toolbar.setVisible(True)
+                language = self.language_translator.get_current_language()
+                if language == "cz": 
+                    self.main_browser.setHtml(f"<html><head>{warning_style}</head><body><h1>Webová stránka ({url_in_bar_value}) není povolena</h1></body></html>")
+                elif language == "de":
+                    self.main_browser.setHtml(f"<html><head>{warning_style}</head><body><h1>Die Website ({url_in_bar_value}) ist nicht erlaubt</h1></body></html>")
+                else:
+                    self.main_browser.setHtml(f"<html><head>{warning_style}</head><body><h1>The website ({url_in_bar_value}) is not allowed</h1></body></html>")
+                                      
         else:
             #If "." is not contained in URL
             if "." not in url_in_bar_value:
@@ -703,8 +793,72 @@ class MyBrowser(QMainWindow):
             self.url_bar.clear()
             # Connect to URL after entering
             self.main_browser.setUrl(QUrl(url_in_bar_value))
-    
-    # Method for security against phishing    
+
+
+    ##############################################################################################
+    ##############################################################################################
+    ##############################################################################################
+        
+    # Method for security against phishing  
+    # def keyPressEvent(self, event: QKeyEvent):
+    #     self.press_count = 0  # To count the key presses
+    #     self.fourth_press_detected = False
+    #      # Increment the count for any key press
+    #     self.press_count += 1
+    #     if Debug:
+    #         print(f"Key pressed {self.press_count} times")
+
+    #     # Detect when the key is pressed 5 times
+    #     if self.press_count >= 5:
+    #         self.fourth_press_detected = True
+    #         self.menu_1_toolbar.setStyleSheet(self.phishing_style_toolbar())
+    #         self.menu_2_toolbar.setStyleSheet(self.phishing_style_toolbar())
+    #         self.press_count = 0  # Reset count after detection
+    #     super().keyPressEvent(event)  # Call the base class method to ensure normal key event processing
+    #     # Allow other key events to be processed normally
+        
+    # def is_fourth_press_detected(self):
+    #     print(f"Fourth press detected: {self.fourth_press_detected}")
+    #     return self.fourth_press_detected
+
+    # def is_fourth_press_detected(self):
+    #     print(f"Fourth press detected: {self.key_filter.fourth_press_detected}")
+    #     return self.key_filter.fourth_press_detected
+
+    # def start_key_listener(self):
+    #     self.key_pressed_flag = False
+    #     print("Key listener started", self.key_pressed_flag)
+
+    #     def on_press(key):
+    #         self.key_pressed_flag = True
+    #         # Optionally stop the listener after first key press:
+    #         if hasattr(self, 'key_listener'):
+    #             self.key_listener.stop()
+
+    #     self.key_listener = keyboard.Listener(on_press=on_press)
+    #     self.key_listener.start()
+
+    # def key_was_pressed(self):
+    #     return getattr(self, 'key_pressed_flag', False)
+
+    def keyPressEvent(self, event):
+        if self.listen_for_keypress:
+            self.key_press_counter += 1
+            print(f"[{self.key_press_counter}] Key pressed: {event.key()} ({event.text()})")
+
+            if self.key_press_counter >= 2:
+                self.key_pressed_after_flag = True
+
+                # Apply phishing UI changes here
+                self.menu_1_toolbar.setStyleSheet(self.phishing_style_toolbar()) 
+                self.menu_2_toolbar.setStyleSheet(self.phishing_style_toolbar()) 
+
+                # Optional: Stop listening after it triggers
+                self.listen_for_keypress = False
+##############################################################################################
+##############################################################################################
+##############################################################################################
+
     def security_against_phishing(self,qurl):
         """
         Checks the given URL for phishing threats and updates the browser's UI and logs accordingly.
@@ -713,22 +867,58 @@ class MyBrowser(QMainWindow):
         """
         # Get url from QURL
         url_in_browser_value = qurl.toString()
+        if Debug:
+            print("URL in Browser: ", url_in_browser_value)
+
         if url_in_browser_value.endswith('/'):
             if self.url_blocker.is_url_blocked(url_in_browser_value):
-                self.toggle_phishing_webpage = True                   
-                # Set red colour for connect to phishing
-                self.menu_1_toolbar.setStyleSheet(self.phishing_style_toolbar())
-                self.menu_2_toolbar.setStyleSheet(self.phishing_style_toolbar())
-                self.notification_fill_text.send_email(url_in_browser_value)
-                # Connect to URL after entering
+                self.toggle_phishing_webpage = True  
+                print("The first BL block condition is met")   
+                
                 self.main_browser.setUrl(QUrl(url_in_browser_value))
+                
+
+                self.listen_for_keypress = True
+                self.key_pressed_after_flag = False
+                self.key_press_counter = 0  # Reset!
+
+                #self.is_fourth_press_detected()
+                # if self.is_fourth_press_detected() == True:
+                #     # Set red colour for connect to phishing
+                #     self.menu_1_toolbar.setStyleSheet(self.phishing_style_toolbar())
+                #     self.menu_2_toolbar.setStyleSheet(self.phishing_style_toolbar())
+                #     ####self.notification_fill_text.send_email(url_in_browser_value)
+                #     # Connect to URL after entering
+                
             else:
-                self.toggle_phishing_webpage = False
-                # Set default style for toolbar
-                self.menu_1_toolbar.setStyleSheet(self.default_style_toolbar())
-                self.menu_2_toolbar.setStyleSheet(self.default_style_toolbar())
-                # Connect to URL after entering
-                self.main_browser.setUrl(QUrl(url_in_browser_value))
+                if url_in_browser_value.startswith("https://www.") or url_in_browser_value.startswith("http://www."):
+                    if self.ml_phishing_url_detector.is_phishing_url(url_in_browser_value):
+                        self.toggle_phishing_webpage = True
+                        print("The second ML block condition is met")  
+                        self.main_browser.setUrl(QUrl(url_in_browser_value))
+                        # Wait 1 second for loading, after 1 second, connect to change web content (HTML injection)
+                        
+                        self.listen_for_keypress = True
+                        self.key_pressed_after_flag = False
+                        self.key_press_counter = 0  # Reset!
+                                
+                        
+                        #self.is_fourth_press_detected()
+
+                        # if self.is_fourth_press_detected() == True:
+                        #     # Set red colour for connect to phishing
+                        #     self.menu_1_toolbar.setStyleSheet(self.phishing_style_toolbar())
+                        #     self.menu_2_toolbar.setStyleSheet(self.phishing_style_toolbar())
+                        #     ####self.notification_fill_text.send_email(url_in_browser_value)
+                        #     # Connect to URL after entering
+                            
+                    else:
+                        self.toggle_phishing_webpage = False
+                        # Set default style for toolbar
+                        self.menu_1_toolbar.setStyleSheet(self.default_style_toolbar())
+                        self.menu_2_toolbar.setStyleSheet(self.default_style_toolbar())
+                        # Connect to URL after entering
+                        self.main_browser.setUrl(QUrl(url_in_browser_value))
         elif not url_in_browser_value.endswith('/'):
             if "about:blank" in url_in_browser_value:
                 self.toggle_phishing_webpage = False
@@ -742,43 +932,74 @@ class MyBrowser(QMainWindow):
 
             elif self.url_blocker.is_url_blocked(url_in_browser_value):
                 self.toggle_phishing_webpage = True
-                # Set red colour for connect to phishing
-                self.menu_1_toolbar.setStyleSheet(self.phishing_style_toolbar())
-                self.menu_2_toolbar.setStyleSheet(self.phishing_style_toolbar())
-                self.notification_fill_text.send_email(url_in_browser_value)
-                # Connect to URL after entering
+                print("The third BL block condition is met")  
                 self.main_browser.setUrl(QUrl(url_in_browser_value))
+                
+                self.listen_for_keypress = True
+                self.key_pressed_after_flag = False
+                self.key_press_counter = 0  # Reset!
+
+                #self.is_fourth_press_detected()
+                # if self.is_fourth_press_detected() == True:
+                #     # Set red colour for connect to phishing
+                #     self.menu_1_toolbar.setStyleSheet(self.phishing_style_toolbar())
+                #     self.menu_2_toolbar.setStyleSheet(self.phishing_style_toolbar())
+                #     #####self.notification_fill_text.send_email(url_in_browser_value)
+                #     # Connect to URL after entering
+                
 
             else:
-                self.toggle_phishing_webpage = False
-                self.menu_1_toolbar.setStyleSheet(self.default_style_toolbar())
-                self.menu_2_toolbar.setStyleSheet(self.default_style_toolbar())
+                if url_in_browser_value.startswith("https://www.") or url_in_browser_value.startswith("http://www."):
+                    if self.ml_phishing_url_detector.is_phishing_url(url_in_browser_value):
+                        self.toggle_phishing_webpage = True
+                        print("The fourth ML block condition is met")  
+
+                        self.listen_for_keypress = True
+                        self.key_pressed_after_flag = False
+                        self.key_press_counter = 0  # Reset!
+
+                        #self.is_fourth_press_detected()
+                        # if self.is_fourth_press_detected() == True:
+                        #     # Set red colour for connect to phishing
+                        #     self.menu_1_toolbar.setStyleSheet(self.phishing_style_toolbar())
+                        #     self.menu_2_toolbar.setStyleSheet(self.phishing_style_toolbar())
+                        #     self.notification_fill_text.send_email(url_in_browser_value)
+                        #     # Connect to URL after entering
+                        #     #####self.main_browser.setUrl(QUrl(url_in_browser_value))
+                    else:
+                        self.toggle_phishing_webpage = False
+                        self.menu_1_toolbar.setStyleSheet(self.default_style_toolbar())
+                        self.menu_2_toolbar.setStyleSheet(self.default_style_toolbar())
 
         self.main_browser.loadFinished.connect(self.finished_load_web_page)
         
     # Method for connect to the second www2 ct24.ceskatelevize.cz
     def navigate_www1(self):
-        self.main_browser.setUrl(QUrl(self.sweb_dataProvider.urlsForWebsites[0]))
+        self.main_browser.setUrl(QUrl(self.url_www1))
+        self.listen_for_keypress = False
         # Set visible after navitigation
         self.url_toolbar.setVisible(False)
         self.toolbar_space.setVisible(False)
         
     # Method for connect to the irozhlas.cz
     def navigate_www2(self):
-        self.main_browser.setUrl(QUrl(self.sweb_dataProvider.urlsForWebsites[1]))
+        self.main_browser.setUrl(QUrl(self.url_www2))
+        self.listen_for_keypress = False
         # Set visible after navitigation
         self.url_toolbar.setVisible(False)
         self.toolbar_space.setVisible(False)
 
     # Method for connect to the vut.cz
     def navigate_www3(self):
-        self.main_browser.setUrl(QUrl(self.sweb_dataProvider.urlsForWebsites[2]))
+        self.main_browser.setUrl(QUrl(self.url_www3))
+        self.listen_for_keypress = False
         # Set visible after navitigation
         self.url_toolbar.setVisible(False)
         self.toolbar_space.setVisible(False)
     # Method for connect to the idnes.cz
     def navigate_www4(self):
-        self.main_browser.setUrl(QUrl(self.sweb_dataProvider.urlsForWebsites[3]))
+        self.main_browser.setUrl(QUrl(self.url_www4))
+        self.listen_for_keypress = False
         # Set visible after navitigation
         self.url_toolbar.setVisible(False)
         self.toolbar_space.setVisible(False)
@@ -787,14 +1008,16 @@ class MyBrowser(QMainWindow):
 
     # Method for connect to the aktualne.cz
     def navigate_www5(self):
-        self.main_browser.setUrl(QUrl(self.sweb_dataProvider.urlsForWebsites[4]))
+        self.main_browser.setUrl(QUrl(self.url_www5))
+        self.listen_for_keypress = False
         # Set visible after navitigation
         self.url_toolbar.setVisible(False)
         self.toolbar_space.setVisible(False)
 
     # Method for connect to the denik.cz
     def navigate_www6(self):
-        self.main_browser.setUrl(QUrl(self.sweb_dataProvider.urlsForWebsites[5]))
+        self.main_browser.setUrl(QUrl(self.url_www6))
+        self.listen_for_keypress = False
         self.url_toolbar.setVisible(False)
         self.toolbar_space.setVisible(False)
 
